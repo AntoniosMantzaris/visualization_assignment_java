@@ -353,7 +353,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 //int val = getVoxel(pixelCoord);
                 //NOTE: you have to implement this function to get the tri-linear interpolation
                 int val = getVoxelTrilinear(pixelCoord);
-                // KANE LOVE
+                // KANE LOVE !
                 // Map the intensity to a grey value by linear scaling
                 pixelColor.r = val / max;
                 pixelColor.g = pixelColor.r;

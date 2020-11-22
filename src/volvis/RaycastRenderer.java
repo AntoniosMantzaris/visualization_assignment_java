@@ -234,7 +234,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         short v110 = volume.getVoxel(c110_x,c110_y,c110_z);
         short v111 = volume.getVoxel(c111_x,c111_y,c111_z);
         
-        
         //
         double a_x = (dx - x + step_x) / (1+step_x) ;
         double a_y = (dy - y + step_y) / (1+step_y) ;
@@ -353,7 +352,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 //int val = getVoxel(pixelCoord);
                 //NOTE: you have to implement this function to get the tri-linear interpolation
                 int val = getVoxelTrilinear(pixelCoord);
-                // KANE LOVE !!
+                
                 // Map the intensity to a grey value by linear scaling
                 pixelColor.r = val / max;
                 pixelColor.g = pixelColor.r;
@@ -491,11 +490,52 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         switch (modeFront) {
             case COMPOSITING:
                 // 1D transfer function 
-                voxel_color.r = 1;
-                voxel_color.g = 0;
-                voxel_color.b = 0;
-                voxel_color.a = 1;
-                opacity = 1;
+                
+                double[] increments = new double[3];
+                VectorMath.setVector(increments, rayVector[0] * sampleStep, rayVector[1] * sampleStep, rayVector[2] * sampleStep);
+                double distance = VectorMath.distance(entryPoint, exitPoint);
+                int nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
+                double[] Pos = new double[3];
+                VectorMath.setVector(Pos, exitPoint[0], exitPoint[1], exitPoint[2]);
+                //VectorMath.setVector(Pos, entryPoint[0], entryPoint[1], entryPoint[2]);
+                        
+                                    int value=getVoxel(Pos);
+                                    TFColor color = tFuncFront.getColor(value);
+                                            opacity = color.a;
+                                            voxel_color.r = color.r;
+                                            voxel_color.b = color.b;
+                                            voxel_color.g = color.g;
+                                            voxel_color.a=color.a;
+                                    
+              
+                                        do{
+                            //for(int i=nrSamples;i>0;i--){
+                              //for(int i=0;i<nrSamples;i++){
+                                  
+                                    value=getVoxel(Pos);
+                                    color = tFuncFront.getColor(value);
+                                            opacity=color.a;
+                                            colorAux.r=color.r;
+                                            colorAux.g= color.g;
+                                            colorAux.b=color.b;
+                                            colorAux.a=color.a;
+                                             voxel_color.r = (voxel_color.r - colorAux.r*(opacity))/(1-voxel_color.a);
+                                            voxel_color.g = (voxel_color.g - colorAux.g*(opacity))/(1-voxel_color.a);
+                                            voxel_color.b = (voxel_color.b - colorAux.b*(opacity))/(1-voxel_color.a);
+                                            voxel_color.a = (voxel_color.a - colorAux.a*(opacity))/(1-voxel_color.a);
+                                    
+                                      for (int k = 0; k < 3; k++) {
+                                        Pos[k] -= increments[k];
+                                    }
+                                            
+                                    
+                                  
+                                    
+                                    nrSamples--; 
+                            }while(nrSamples>0);    
+                            
+                                
+                            
                 break;
             case TRANSFER2D:
                 // 2D transfer function 
@@ -519,7 +559,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         r = voxel_color.r;
         g = voxel_color.g;
         b = voxel_color.b;
-        alpha = opacity;
+        alpha = voxel_color.a;
+
 
         //computes the color
         int color = computePackedPixelColor(r, g, b, alpha);

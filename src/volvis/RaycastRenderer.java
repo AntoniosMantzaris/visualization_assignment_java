@@ -501,32 +501,47 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         
                                     int value=getVoxel(Pos);
                                     TFColor color = tFuncFront.getColor(value);
+                                       if (value > 0) { // if the maximum = 0 make the voxel transparent
                                             opacity = color.a;
                                             voxel_color.r = color.r;
                                             voxel_color.b = color.b;
                                             voxel_color.g = color.g;
                                             voxel_color.a=color.a;
+                                          
+                                            } else {
+                                                opacity = 0.0;
+                                                voxel_color.r =0;
+                                                voxel_color.b = 0;
+                                                voxel_color.g = 0;
+                                                voxel_color.a=0;    //εν τελη δεν επηρεαζει το else (εβγαλα ιδιο αποτελεσμα και χωρις την if)
+                                            }
+                                            
                                     
               
                                         do{
                             //for(int i=nrSamples;i>0;i--){
                               //for(int i=0;i<nrSamples;i++){
-                                  
-                                    value=getVoxel(Pos);
-                                    color = tFuncFront.getColor(value);
+                                  for (int k = 0; k < 3; k++) {
+                                        Pos[k] -= increments[k];
+                                    }
+                                            value=getVoxel(Pos);
+                                            color = tFuncFront.getColor(value);
                                             opacity=color.a;
                                             colorAux.r=color.r;
                                             colorAux.g= color.g;
                                             colorAux.b=color.b;
                                             colorAux.a=color.a;
-                                             voxel_color.r = (voxel_color.r - colorAux.r*(opacity))/(1-voxel_color.a);
-                                            voxel_color.g = (voxel_color.g - colorAux.g*(opacity))/(1-voxel_color.a);
-                                            voxel_color.b = (voxel_color.b - colorAux.b*(opacity))/(1-voxel_color.a);
-                                            voxel_color.a = (voxel_color.a - colorAux.a*(opacity))/(1-voxel_color.a);
+                                            //voxel_color.r = color.r*color.a +voxel_color.r*(1-voxel_color.a);
+                                            //voxel_color.g = color.g*color.a +voxel_color.g*(1-voxel_color.a);
+                                            //voxel_color.b = color.b*color.a +voxel_color.b*(1-voxel_color.a);
+                                            //voxel_color.a = color.a*color.a +voxel_color.a*(1-voxel_color.a);
+                                            voxel_color.r = (voxel_color.r*(1-opacity) + colorAux.r*opacity);
+                                            voxel_color.g = (voxel_color.g*(1-opacity) + colorAux.g*opacity);
+                                            voxel_color.b = (voxel_color.b*(1-opacity) + colorAux.b*opacity);
+                                            voxel_color.a = (voxel_color.a*(1-opacity) + colorAux.a*opacity);
+                                   
                                     
-                                      for (int k = 0; k < 3; k++) {
-                                        Pos[k] -= increments[k];
-                                    }
+                                      
                                             
                                     
                                   

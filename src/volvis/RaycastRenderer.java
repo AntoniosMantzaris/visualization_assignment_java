@@ -538,9 +538,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         if(cuttingPlaneMode){
             VectorMath.setVector(currentPos, entryPoint[0], entryPoint[1], entryPoint[2]);
             maximum = 0;
-            if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>=0){
+            nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
+            
              
         do {
+            if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]<=0){
             double value = getVoxelTrilinear(currentPos) / 255.;
             if (value > maximum) {
                 maximum = value;
@@ -548,7 +550,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             for (int i = 0; i < 3; i++) {
                 currentPos[i] += increments[i];
             }
+            }
             nrSamples--;
+            
         } while (nrSamples > 0);
 
         
@@ -558,7 +562,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             alpha = 0.0;
         }
         r = g = b = maximum;
-            }
+            //}
         }
             
         int color = computePackedPixelColor(r, g, b, alpha);
@@ -582,15 +586,18 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         r=0.0;
         g=0.0;
         b=0.0;
-        if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>0){
+        
         double maximum = 0;
         do {
+            if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>0){
             double value = getVoxelTrilinear(currentPos) / 255.;
             if (value > maximum) {
                 maximum = value;
             }
+            
             for (int i = 0; i < 3; i++) {
                 currentPos[i] += increments[i];
+            }
             }
             nrSamples--;
         } while (nrSamples > 0);
@@ -603,7 +610,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             alpha = 0.0;
         }
         r = g = b = maximum;
-        } 
+        //} 
         int color = computePackedPixelColor(r, g, b, alpha);
         return color;
         
@@ -684,22 +691,36 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 currentPos[j] -= increments[j];
             }
         }
+             if (shadingMode) {
+            // Shading mode on
+            TFColor shade = new TFColor();
+            TFColor voxel_color = new TFColor(r,g,b,alpha);
+            // compute phong shading
+            // light vector directed to view point
+            shade = computePhongShading(voxel_color,shadeGrad,lightVector,rayVector);
+            r = shade.r;
+            g = shade.g;
+            b = shade.b;
+        }
         
+             
         VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
         if(cuttingPlaneMode){
             VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
             r = g = b = 0.0;
-            alpha=0;
+            alpha=1;
             opacity=0;
-            if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]<=0){
+            shadeGrad = getGradientTrilinear(currentPos);
+            short value = getVoxelTrilinear(currentPos);
         
-        
-        shadeGrad = getGradientTrilinear(currentPos);
+       
         
         
         // tranverse along the ray
         for (int i = nrSamples; i > 0 ; i--){
-            short value = getVoxelTrilinear(currentPos);
+            if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]<0){
+             
+                 value = getVoxelTrilinear(currentPos);
             
             // samples with voxel value higher than isovalue are colorized
             TFColor color = tFuncFront.getColor(value);
@@ -729,16 +750,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 
             }
 
-            
+        }
             for (int j = 0; j < 3; j++) {
                 currentPos[j] -= increments[j];
             }
-        }  
-            }
-        
         }
-        
-        if (shadingMode) {
+             if (shadingMode) {
             // Shading mode on
             TFColor shade = new TFColor();
             TFColor voxel_color = new TFColor(r,g,b,alpha);
@@ -749,6 +766,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             g = shade.g;
             b = shade.b;
         }
+            //}
+        
+        }
+        
+   
 
      
         //computes the color
@@ -778,13 +800,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //the current position is initialized as the entry point
         double[] currentPos = new double[3];
         VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
-        if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>0){
+    
         VoxelGradient shadeGrad = getGradientTrilinear(currentPos);
-        
+        short value = getVoxelTrilinear(currentPos);
         
         // tranverse along the ray
         for (int i = nrSamples; i > 0 ; i--){
-            short value = getVoxelTrilinear(currentPos);
+            if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>0){
+            value = getVoxelTrilinear(currentPos);
             
             // samples with voxel value higher than isovalue are colorized
             TFColor color = tFuncBack.getColor(value);
@@ -813,8 +836,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 }*/
                 
             }
-
             
+        }  
             for (int j = 0; j < 3; j++) {
                 currentPos[j] -= increments[j];
             }
@@ -830,8 +853,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             g = shade.g;
             b = shade.b;
         }
+    
 
-        }
+        //}
         //computes the color
         int color = computePackedPixelColor(r, g, b, alpha);
         return color;
@@ -932,8 +956,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
            
                 if(cuttingPlaneMode){
                 VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
-              
-                if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>=0){
+                nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
+                
                 
                 color = tFuncFront.getColor(voxelValue);
                 voxel_color.r = color.r;
@@ -944,7 +968,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      
                 // tranverse along the ray
                 do{
-
+                        if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]<=0){
                         // read ray sample's color and opacity
                         voxelValue = getVoxelTrilinear(currentPos);
                         color = tFuncFront.getColor(voxelValue);
@@ -970,13 +994,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                                 shadeGrad.mag = 1;
                             }
                         }
-                        
+                }      
                         for (int k = 0; k < 3; k++) {
                             currentPos[k] -= increments[k];
                         }
                     nrSamples--; 
                 }while(nrSamples>0);       
-                }
+                //}
             }
                 //shadeGrad = getGradientTrilinear(currentPos);
             break;
@@ -1019,15 +1043,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                
                if(cuttingPlaneMode){
                     VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
-                    
-                   if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>=0){
+                   nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep); 
                 fv = tFunc2DFront.baseIntensity;
                 material_r = tFunc2DFront.radius; // / gradients.getMaxGradientMagnitude();
-                
-                voxel_color.r = 0;
-                voxel_color.g = 0;
+                 voxel_color.r = 0;
+                 voxel_color.g = 0;
                 voxel_color.b = 0;
-                voxel_color.a = 0;
+              voxel_color.a = 0;
+               
                 
 
                 av = tFunc2DFront.color.a;
@@ -1035,6 +1058,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 a_tot = 1;
                 // tranverse along the ray
                 do{
+                        if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]<=0){
+                        voxel_color.r = tFunc2DFront.color.r;
+                        voxel_color.g = tFunc2DFront.color.g;
+                        voxel_color.b = tFunc2DFront.color.b;
+                        voxel_color.a = 0;
+                            
                         voxelValue = getVoxelTrilinear(currentPos);   
                         color = tFuncFront.getColor(voxelValue);
                         voxelGrad = getGradientTrilinear(currentPos);
@@ -1047,15 +1076,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                             shadeGrad = voxelGrad;
 
                         }
-
+                        }
                         for (int k = 0; k < 3; k++) {
                             currentPos[k] -= increments[k];
                         }
+                      voxel_color.a = 1 - a_tot;   
                     nrSamples--; 
                 }while(nrSamples>0);
 
-               voxel_color.a = 1 - a_tot;
-                   }
+               //voxel_color.a = 1 - a_tot;
+                   //}
             }
          
                 break;
@@ -1116,7 +1146,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         VoxelGradient shadeGrad = new VoxelGradient();
 
         // TODO 2: To be Implemented this function. Now, it just gives back a constant color depending on the mode
-        if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>0){
+       
         switch (modeBack) {
             case COMPOSITING:
                 // 1D transfer function 
@@ -1133,7 +1163,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      
                 // tranverse along the ray
                 do{
-
+                        if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>0){
                         // read ray sample's color and opacity
                         voxelValue = getVoxelTrilinear(currentPos);
                         color = tFuncBack.getColor(voxelValue);
@@ -1159,7 +1189,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                                 shadeGrad.mag = 1;
                             }
                         }
-                        
+                }
                         for (int k = 0; k < 3; k++) {
                             currentPos[k] -= increments[k];
                         }
@@ -1172,9 +1202,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 short fv = tFunc2DBack.baseIntensity;
                 double material_r = tFunc2DBack.radius; // / gradients.getMaxGradientMagnitude();
                 
-                voxel_color.r = tFunc2DBack.color.r;
-                voxel_color.g = tFunc2DBack.color.g;
-                voxel_color.b = tFunc2DBack.color.b;
+                voxel_color.r = 0;
+                voxel_color.g = 0;
+                voxel_color.b = 0;
                 voxel_color.a = 0;
                 shadeGrad = new VoxelGradient();
                 voxelGrad = new VoxelGradient();
@@ -1184,6 +1214,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 double a_tot = 1;
                 // tranverse along the ray
                 do{
+                        if((currentPos[0]-planePoint[0])*planeNorm[0]+(currentPos[1]-planePoint[1])*planeNorm[1]+(currentPos[2]-planePoint[2])*planeNorm[2]>0){
+                        voxel_color.r = tFunc2DFront.color.r;
+                        voxel_color.g = tFunc2DFront.color.g;
+                        voxel_color.b = tFunc2DFront.color.b;
+                        voxel_color.a = 0;
                         voxelValue = getVoxelTrilinear(currentPos);   
                         color = tFuncBack.getColor(voxelValue);
                         voxelGrad = getGradientTrilinear(currentPos);
@@ -1196,7 +1231,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                             shadeGrad = voxelGrad;
 
                         }
-
+                        }
                         for (int k = 0; k < 3; k++) {
                             currentPos[k] -= increments[k];
                         }
@@ -1225,7 +1260,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
         alpha = voxel_color.a;
 
-        }
+       // }
         //computes the color
         int color = computePackedPixelColor(r, g, b, alpha);
         
@@ -1365,7 +1400,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     if(cuttingPlaneMode){
                         switch (modeBack) {
                         case COMPOSITING:
-                            System.out.println("paok");
+                           
                         case TRANSFER2D:
                             val2 = traceRayComposite2(entryPoint, exitPoint, rayVector, sampleStep);
                             break;
